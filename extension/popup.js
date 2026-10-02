@@ -93,49 +93,59 @@ function extractInstagramDataFromPage() {
 
   const ogDesc = document.querySelector('meta[property="og:description"]')?.content || document.querySelector('meta[name="description"]')?.content || '';
   if (ogDesc) {
-    const mFollowers = ogDesc.match(/([0-9.,KMBkm]+)\s*Followers/i);
-    if (mFollowers) followers = mFollowers[1];
-
-    const mFollowing = ogDesc.match(/([0-9.,KMBkm]+)\s*Following/i);
-    if (mFollowing) following = mFollowing[1];
-
-    const mPosts = ogDesc.match(/([0-9.,KMBkm]+)\s*posts?/i);
-    if (mPosts) posts = mPosts[1];
-
+    // Only extract bio from meta — NOT counts (meta uses different rounding than what's shown on screen)
     const parts = ogDesc.split('-');
     if (parts.length > 1) {
       bio = parts.slice(1).join('-').replace(/See Instagram photos and videos.*/i, '').trim();
     }
   }
 
-  // 2. DOM Elements Search
+  // 2. DOM Elements Search — READ SCREEN VALUES FIRST (matches what the user sees on Instagram)
   const header = document.querySelector('header');
   if (header) {
     const fullText = header.innerText || '';
+
+    // Best: read from <li> stats rows (exact same text shown on Instagram page)
+    const statItems = header.querySelectorAll('li');
+    for (let li of statItems) {
+      const liText = li.innerText || '';
+      const liLower = liText.toLowerCase();
+      const numMatch = liText.match(/([0-9][0-9,]*\.?[0-9]*\s*[KMBkmb]?)/);
+      if (numMatch) {
+        const val = numMatch[1].trim();
+        if (liLower.includes('follower') && followers === 'N/A') followers = val;
+        else if (liLower.includes('following') && following === 'N/A') following = val;
+        else if (liLower.includes('post') && (posts === 'N/A' || !posts)) posts = val;
+      }
+    }
+
+    // Fallback: full header text match
     if (followers === 'N/A') {
-      const fMatch = fullText.match(/([0-9.,KMBkm]+)\s*followers/i);
+      const fMatch = fullText.match(/([0-9][0-9,.]*[KMBkmb]?)\s*followers/i);
       if (fMatch) followers = fMatch[1];
     }
     if (following === 'N/A') {
-      const fMatch = fullText.match(/([0-9.,KMBkm]+)\s*following/i);
+      const fMatch = fullText.match(/([0-9][0-9,.]*[KMBkmb]?)\s*following/i);
       if (fMatch) following = fMatch[1];
     }
     if (posts === 'N/A' || !posts) {
-      const pMatch = fullText.match(/([0-9.,KMBkm]+)\s*posts?/i);
+      const pMatch = fullText.match(/([0-9][0-9,.]*[KMBkmb]?)\s*posts?/i);
       if (pMatch) posts = pMatch[1];
     }
 
-    if (posts === 'N/A' || !posts) {
-      const items = header.querySelectorAll('li, span');
-      for (let item of items) {
-        const txt = item.innerText || '';
-        if (txt.match(/posts?/i)) {
-          const numMatch = txt.match(/([0-9.,KMBkm]+)/);
-          if (numMatch) {
-            posts = numMatch[1];
-            break;
-          }
-        }
+    // Last resort: meta tag (Instagram rounds these differently from what's shown on screen)
+    if (ogDesc) {
+      if (followers === 'N/A') {
+        const mF = ogDesc.match(/([0-9.,KMBkm]+)\s*Followers/i);
+        if (mF) followers = mF[1];
+      }
+      if (following === 'N/A') {
+        const mFw = ogDesc.match(/([0-9.,KMBkm]+)\s*Following/i);
+        if (mFw) following = mFw[1];
+      }
+      if (posts === 'N/A' || !posts) {
+        const mP = ogDesc.match(/([0-9.,KMBkm]+)\s*posts?/i);
+        if (mP) posts = mP[1];
       }
     }
 
@@ -170,21 +180,55 @@ function extractInstagramDataFromPage() {
       }
     }
 
-    const combined = (bio + ' ' + fullText + ' ' + name).toLowerCase();
-    if (combined.match(/\b(fit|fitness|gym|workout|trainer|coach|crossfit|health|bodybuilding|wellness)\b/)) category = 'Fitness & Health';
-    else if (combined.match(/\b(sports|athlete|football|basketball|soccer|cricket|tennis|golf|runner|swimmer)\b/)) category = 'Sports & Athletes';
-    else if (combined.match(/\b(fashion|style|outfit|model|clothing|wear|brand|apparel|stylist)\b/)) category = 'Fashion & Style';
-    else if (combined.match(/\b(beauty|makeup|skincare|cosmetics|hair|aesthetic|mua|skin)\b/)) category = 'Beauty & Cosmetics';
-    else if (combined.match(/\b(business|tech|founder|ceo|entrepreneur|investor|marketing|crypto|software|developer|startup)\b/)) category = 'Business & Tech';
-    else if (combined.match(/\b(travel|explore|photographer|photography|adventure|wanderlust|vlog|vlogger|lifestyle)\b/)) category = 'Travel & Lifestyle';
+    category = detectCategoryInPage(bio, fullText, name, username);
   } else {
-    const combined = (bio + ' ' + name).toLowerCase();
-    if (combined.match(/\b(fit|fitness|gym|workout|trainer|coach|crossfit|health|bodybuilding|wellness)\b/)) category = 'Fitness & Health';
-    else if (combined.match(/\b(sports|athlete|football|basketball|soccer|cricket|tennis|golf|runner|swimmer)\b/)) category = 'Sports & Athletes';
-    else if (combined.match(/\b(fashion|style|outfit|model|clothing|wear|brand|apparel|stylist)\b/)) category = 'Fashion & Style';
-    else if (combined.match(/\b(beauty|makeup|skincare|cosmetics|hair|aesthetic|mua|skin)\b/)) category = 'Beauty & Cosmetics';
-    else if (combined.match(/\b(business|tech|founder|ceo|entrepreneur|investor|marketing|crypto|software|developer|startup)\b/)) category = 'Business & Tech';
-    else if (combined.match(/\b(travel|explore|photographer|photography|adventure|wanderlust|vlog|vlogger|lifestyle)\b/)) category = 'Travel & Lifestyle';
+    category = detectCategoryInPage(bio, '', name, username);
+  }
+
+  function detectCategoryInPage(bioStr = '', fullTextStr = '', nameStr = '', userStr = '') {
+    const combined = `${bioStr} ${fullTextStr} ${nameStr} ${userStr}`.toLowerCase();
+
+    // 1. Check Specific Categories First (Prevents "Digital Creator" false positive)
+    if (
+      combined.match(/\b(sport|sports|athlete|athletes|player|captain|cricket|cricketer|football|footballer|basketball|soccer|tennis|golf|runner|swimmer|racing|wwe|f1|olympian|badminton|hockey|boxer|wrestler|baller|striker|midfielder|bowler|batsman|allrounder|trophy|champion|champions|stadium|match)\b/) ||
+      combined.match(/(⚽|🏏|🏀|🎾|🏆|🥇|🏎️|🥊|⚾|🏈)/) ||
+      combined.match(/\b(cristiano|ronaldo|virat|kohli|messi|leomessi|neymar|mbappe|lebron|kingjames|rohit|dhoni|sachin|hardik|bumrah|klrahul|siuu|siuuuu|rcb|bcci|one8|wrogn|realmadrid|alnassr|juventus|barcelona|psg|fifa|icc|ipl)\b/)
+    ) {
+      return 'Sports & Athletes';
+    }
+    if (combined.match(/\b(fit|fitness|gym|workout|trainer|coach|crossfit|health|bodybuilding|wellness|physique|exercise|nutrition)\b/)) {
+      return 'Fitness & Health';
+    }
+    if (combined.match(/\b(fashion|style|outfit|model|modeling|clothing|wear|brand|apparel|stylist|vogue|couture|wardrobe)\b/)) {
+      return 'Fashion & Style';
+    }
+    if (combined.match(/\b(beauty|makeup|skincare|cosmetics|hair|hairstylist|aesthetic|mua|skin|glow|salon)\b/)) {
+      return 'Beauty & Cosmetics';
+    }
+    if (combined.match(/\b(business|tech|technology|founder|ceo|co-founder|entrepreneur|investor|marketing|crypto|software|developer|startup|agency|corporate)\b/)) {
+      return 'Business & Tech';
+    }
+    if (combined.match(/\b(travel|explore|photographer|photography|adventure|wanderlust|vlog|vlogger|lifestyle|food|foodie|chef|hotel|traveler)\b/)) {
+      return 'Travel & Lifestyle';
+    }
+
+    // 2. DOM Specific Category Tag search on Instagram Profile Header
+    const categoryElements = document.querySelectorAll('header div, header span, header button, header a');
+    for (let el of categoryElements) {
+      const txt = el.innerText ? el.innerText.trim() : '';
+      if (txt && txt.length > 2 && txt.length < 35 && !txt.includes('followers') && !txt.includes('following') && !txt.includes('posts')) {
+        const lower = txt.toLowerCase();
+        if (lower.includes('athlete') || lower.includes('cricketer') || lower.includes('sport')) return 'Sports & Athletes';
+        if (lower.includes('fitness') || lower.includes('gym') || lower.includes('health')) return 'Fitness & Health';
+        if (lower.includes('fashion') || lower.includes('model') || lower.includes('clothing')) return 'Fashion & Style';
+        if (lower.includes('beauty') || lower.includes('makeup') || lower.includes('cosmetics')) return 'Beauty & Cosmetics';
+        if (lower.includes('business') || lower.includes('tech') || lower.includes('entrepreneur')) return 'Business & Tech';
+        if (lower.includes('travel') || lower.includes('photographer') || lower.includes('lifestyle') || lower.includes('food')) return 'Travel & Lifestyle';
+      }
+    }
+
+    // 3. Fallback
+    return 'Digital Creator';
   }
 
   return {

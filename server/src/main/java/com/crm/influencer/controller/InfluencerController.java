@@ -38,6 +38,23 @@ public class InfluencerController {
         influencer.setUsername(cleanUsername);
 
         if (influencerRepository.existsByUsername(cleanUsername)) {
+            Optional<Influencer> existingOpt = influencerRepository.findByUsername(cleanUsername);
+            if (existingOpt.isPresent()) {
+                Influencer existing = existingOpt.get();
+                // Update non-empty extracted profile fields if re-captured
+                if (influencer.getName() != null && !"N/A".equals(influencer.getName())) existing.setName(influencer.getName());
+                if (influencer.getBio() != null && !"N/A".equals(influencer.getBio())) existing.setBio(influencer.getBio());
+                if (influencer.getFollowers() != null && !"N/A".equals(influencer.getFollowers())) existing.setFollowers(influencer.getFollowers());
+                if (influencer.getFollowing() != null && !"N/A".equals(influencer.getFollowing())) existing.setFollowing(influencer.getFollowing());
+                if (influencer.getPosts() != null && !"N/A".equals(influencer.getPosts())) existing.setPosts(influencer.getPosts());
+                if (influencer.getProfileImage() != null && !"N/A".equals(influencer.getProfileImage())) existing.setProfileImage(influencer.getProfileImage());
+                if (influencer.getWebsiteUrl() != null && !"N/A".equals(influencer.getWebsiteUrl())) existing.setWebsiteUrl(influencer.getWebsiteUrl());
+                if (influencer.getLocation() != null && !"N/A".equals(influencer.getLocation())) existing.setLocation(influencer.getLocation());
+                if (influencer.getCategory() != null && !"N/A".equals(influencer.getCategory())) existing.setCategory(influencer.getCategory());
+                existing.setUpdatedAt(java.time.LocalDateTime.now());
+                Influencer updated = influencerRepository.save(existing);
+                return ResponseEntity.ok(Map.of("message", "Influencer profile updated successfully", "influencer", updated, "updated", true));
+            }
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("message", "Influencer already exists"));
         }
@@ -56,6 +73,8 @@ public class InfluencerController {
         if (influencer.getProfileUrl() == null || influencer.getProfileUrl().trim().isEmpty()) {
             influencer.setProfileUrl("https://www.instagram.com/" + cleanUsername + "/");
         }
+        influencer.setCreatedAt(java.time.LocalDateTime.now());
+        influencer.setUpdatedAt(java.time.LocalDateTime.now());
 
         Influencer saved = influencerRepository.save(influencer);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -83,6 +102,14 @@ public class InfluencerController {
             list.sort(Comparator.comparing(Influencer::getId));
         } else if ("followers".equalsIgnoreCase(sort)) {
             list.sort((a, b) -> Long.compare(parseFollowerCount(b.getFollowers()), parseFollowerCount(a.getFollowers())));
+        } else if ("name_asc".equalsIgnoreCase(sort)) {
+            list.sort(Comparator.comparing(i -> i.getName() != null ? i.getName().toLowerCase() : ""));
+        } else if ("name_desc".equalsIgnoreCase(sort)) {
+            list.sort((a, b) -> (b.getName() != null ? b.getName().toLowerCase() : "").compareTo(a.getName() != null ? a.getName().toLowerCase() : ""));
+        } else if ("followers_asc".equalsIgnoreCase(sort)) {
+            list.sort(Comparator.comparingLong(a -> parseFollowerCount(a.getFollowers())));
+        } else if ("favorites_first".equalsIgnoreCase(sort)) {
+            list.sort((a, b) -> Boolean.compare(Boolean.TRUE.equals(b.getIsFavorite()), Boolean.TRUE.equals(a.getIsFavorite())));
         } else {
             // Default: newest
             list.sort((a, b) -> b.getId().compareTo(a.getId()));
@@ -119,20 +146,24 @@ public class InfluencerController {
             if (updates.containsKey("category")) influencer.setCategory(String.valueOf(updates.get("category")));
             if (updates.containsKey("location")) influencer.setLocation(String.valueOf(updates.get("location")));
             if (updates.containsKey("websiteUrl")) influencer.setWebsiteUrl(String.valueOf(updates.get("websiteUrl")));
+            if (updates.containsKey("followers")) influencer.setFollowers(String.valueOf(updates.get("followers")));
+            if (updates.containsKey("following")) influencer.setFollowing(String.valueOf(updates.get("following")));
+            if (updates.containsKey("posts")) influencer.setPosts(String.valueOf(updates.get("posts")));
             
+            influencer.setUpdatedAt(java.time.LocalDateTime.now());
             Influencer updated = influencerRepository.save(influencer);
             return ResponseEntity.ok(updated);
         }).orElse(ResponseEntity.notFound().build());
     }
 
     private String detectCategoryFromBio(String bio, String name) {
-        String combined = (bio + " " + name).toLowerCase();
-        if (combined.matches(".*\\b(fit|fitness|gym|workout|trainer|coach|crossfit|health|bodybuilding|wellness)\\b.*")) return "Fitness & Health";
-        if (combined.matches(".*\\b(sport|sports|athlete|football|basketball|soccer|cricket|tennis|golf|runner|swimmer)\\b.*")) return "Sports & Athletes";
-        if (combined.matches(".*\\b(fashion|style|outfit|model|clothing|wear|apparel|stylist)\\b.*")) return "Fashion & Style";
-        if (combined.matches(".*\\b(beauty|makeup|skincare|cosmetics|hair|aesthetic|mua)\\b.*")) return "Beauty & Cosmetics";
-        if (combined.matches(".*\\b(business|tech|founder|ceo|entrepreneur|investor|marketing|crypto|software|developer|startup)\\b.*")) return "Business & Tech";
-        if (combined.matches(".*\\b(travel|explore|photographer|photography|adventure|wanderlust|vlog|vlogger|lifestyle)\\b.*")) return "Travel & Lifestyle";
+        String combined = ((bio != null ? bio : "") + " " + (name != null ? name : "")).toLowerCase();
+        if (combined.matches(".*\\b(sport|sports|athlete|athletes|player|captain|cricket|cricketer|football|footballer|basketball|soccer|tennis|golf|runner|swimmer|racing|wwe|f1|olympian|badminton|hockey|boxer|wrestler|baller|striker|midfielder|bowler|batsman|allrounder|trophy|champion|champions|stadium|match|cristiano|ronaldo|virat|kohli|messi|leomessi|neymar|mbappe|lebron|kingjames|rohit|dhoni|sachin|hardik|bumrah|klrahul|siuu|siuuuu|rcb|bcci|one8|wrogn|realmadrid|alnassr|juventus|barcelona|psg|fifa|icc|ipl)\\b.*")) return "Sports & Athletes";
+        if (combined.matches(".*\\b(fit|fitness|gym|workout|trainer|coach|crossfit|health|bodybuilding|wellness|physique|exercise|nutrition)\\b.*")) return "Fitness & Health";
+        if (combined.matches(".*\\b(fashion|style|outfit|model|modeling|clothing|wear|apparel|stylist|vogue|couture|wardrobe)\\b.*")) return "Fashion & Style";
+        if (combined.matches(".*\\b(beauty|makeup|skincare|cosmetics|hair|hairstylist|aesthetic|mua|skin|glow|salon)\\b.*")) return "Beauty & Cosmetics";
+        if (combined.matches(".*\\b(business|tech|technology|founder|ceo|co-founder|entrepreneur|investor|marketing|crypto|software|developer|startup|agency|corporate)\\b.*")) return "Business & Tech";
+        if (combined.matches(".*\\b(travel|explore|photographer|photography|adventure|wanderlust|vlog|vlogger|lifestyle|food|foodie|chef|hotel|traveler)\\b.*")) return "Travel & Lifestyle";
         return "Digital Creator";
     }
 

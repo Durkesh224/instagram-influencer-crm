@@ -50,6 +50,7 @@ public class Influencer {
     private Boolean isFavorite = false;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     public Influencer() {}
 
@@ -69,6 +70,12 @@ public class Influencer {
         if (notes != null) this.notes = notes;
         this.isFavorite = isFavorite != null ? isFavorite : false;
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     // Getters and Setters
@@ -121,4 +128,7 @@ public class Influencer {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt != null ? updatedAt : createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
