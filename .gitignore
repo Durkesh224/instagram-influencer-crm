@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+dashboard/node_modules/
+
+# Build outputs
+target/
+server/target/
+dashboard/dist/
+
+# Database files
+server/database/
+database/
+*.db
+*.mv.db
+*.trace.db
+
+# Logs & Environment
+*.log
+.env
+.env.local
+
+# IDE & OS files
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db

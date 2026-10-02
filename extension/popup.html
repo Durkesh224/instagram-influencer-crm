@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Influencer CRM</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-card">
+    <div class="popup-header">
+      <div class="logo-title">
+        <img src="icons/icon48.png" width="22" height="22" style="border-radius: 5px; object-fit: cover;" />
+        <span>Influencer CRM</span>
+      </div>
+      <a href="http://localhost:5173" target="_blank" class="dash-link">Open Dashboard ↗</a>
+    </div>
+
+    <!-- Active Profile Content -->
+    <div id="profile-container" class="hidden">
+      <div class="profile-hero">
+        <img id="pop-avatar" class="avatar hidden" />
+        <div id="pop-avatar-fallback" class="avatar-fallback hidden">I</div>
+        <div class="profile-text">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <h2 id="pop-name">Name</h2>
+            <span id="pop-category" class="category-badge">General</span>
+          </div>
+          <a id="pop-username" href="#" target="_blank" class="username">@username</a>
+        </div>
+      </div>
+
+      <!-- Stats Row: Followers, Following, Posts -->
+      <div class="stats-row">
+        <div class="mini-stat">
+          <span class="label">Followers</span>
+          <span id="pop-followers" class="val">N/A</span>
+        </div>
+        <div class="mini-stat">
+          <span class="label">Following</span>
+          <span id="pop-following" class="val">N/A</span>
+        </div>
+        <div class="mini-stat">
+          <span class="label">Posts</span>
+          <span id="pop-posts" class="val">N/A</span>
+        </div>
+      </div>
+
+      <!-- Meta info: Website & Location -->
+      <div class="meta-row">
+        <div id="pop-website-container" class="meta-item hidden">
+          <span class="meta-icon">🌐</span>
+          <a id="pop-website" href="#" target="_blank" class="meta-link">N/A</a>
+        </div>
+        <div id="pop-location-container" class="meta-item hidden">
+          <span class="meta-icon">📍</span>
+          <span id="pop-location" class="meta-text">N/A</span>
+        </div>
+      </div>
+
+      <!-- Bio box -->
+      <div id="pop-bio" class="bio">Bio details...</div>
+
+      <!-- Tag / Category Selection -->
+      <div class="form-field">
+        <label class="field-label">Campaign Tag / Status</label>
+        <select id="pop-tag-select" class="field-select">
+          <option value="Potential">Potential</option>
+          <option value="Contacted">Contacted</option>
+          <option value="Interested">Interested</option>
+          <option value="Collaboration">Collaboration</option>
+        </select>
+      </div>
+
+      <!-- Notes input -->
+      <div class="form-field">
+        <label class="field-label">CRM Notes / Campaign Grouping</label>
+        <textarea id="pop-notes-input" class="field-textarea" rows="2" placeholder="Add private notes, rates, campaign names..."></textarea>
+      </div>
+
+      <button id="pop-add-btn" class="action-btn">
+        + Save to CRM
+      </button>
+    </div>
+
+    <!-- Not Instagram Profile Fallback -->
+    <div id="non-profile-container" class="hidden">
+      <div class="info-box">
+        <p class="msg">Open an Instagram profile page to add an influencer.</p>
+        <a href="http://localhost:5173" target="_blank" class="open-dash-btn">Open CRM Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-container" class="loading-state">
+      <span>Detecting profile details...</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
