@@ -136,18 +136,7 @@ npm run dev
 
 ---
 
-## 🎬 2-Minute Demo Workflow
 
-1. Start Spring Boot (`mvn spring-boot:run`) and React (`npm run dev`).
-2. Open Chrome and visit an Instagram profile (e.g. `https://www.instagram.com/cristiano/`).
-3. Observe the floating **"+ Add to CRM"** widget on the bottom right.
-4. Click **"+ Add to CRM"** -> Button shows **"Saving..."** then changes to **"✓ Influencer added to CRM"**.
-5. Click **"+ Add to CRM"** again -> Button gracefully shows **"Already in CRM"**.
-6. Open the React CRM Dashboard at `http://localhost:5173`.
-7. Notice stats update immediately and the newly added influencer appears in the table.
-8. Filter by status tags or search by name. Edit campaign notes or update status to **"Collaboration"**.
-
----
 
 ## ⚠️ Limitations
 
