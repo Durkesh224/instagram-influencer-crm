@@ -140,4 +140,21 @@ npm run dev
 
 ## ⚠️ Limitations
 
-- The extension relies on publicly visible Instagram profile elements via DOM inspection. If Instagram updates its structural HTML class names, fallback selectors are used to prevent breaking the application.
+- The extension relies on publicly visible Instagram profile elements via DOM inspection. If Instagram
+-
+---
+
+## 🎥 Demo Video
+
+Watch the full working demo of the Chrome Extension + CRM Dashboard:
+
+👉 https://drive.google.com/file/d/1o6FeZTwjG4kVRDjiC6pUCf4HSp3GPl6k/view?usp=sharing
+
+**What the video shows:**
+- “Add to CRM” button appearing on Instagram profile pages
+- Capturing influencer details (Name, Username, Bio, Followers, etc.)
+- Success message after saving
+- Data appearing in the React CRM Dashboard
+- Search, Tags, Notes, and Export features
+-
+updates its structural HTML class names, fallback selectors are used to prevent breaking the application.
